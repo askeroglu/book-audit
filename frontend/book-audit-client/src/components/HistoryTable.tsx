@@ -1,5 +1,5 @@
 import { Box, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material'
-import type { GridPaginationModel } from '@mui/x-data-grid'
+import type { GridPaginationModel, GridRenderCellParams } from '@mui/x-data-grid'
 import { useState } from 'react'
 import { DataTable } from './DataTable'
 import type { BookHistory } from '../types/book'
@@ -20,9 +20,15 @@ export function HistoryTable({ history }: HistoryTableProps) {
   })
 
   const columns = [
-    { field: 'action', headerName: 'Action', width: 100 },
-    { field: 'changes', headerName: 'Changes', flex: 1 },
-    { field: 'timestamp', headerName: 'Timestamp', width: 180 }
+    { field: 'action', headerName: 'Action', width: 120 },
+    { field: 'changes', headerName: 'Changes', flex: 1, minWidth: 300 },
+    {
+      field: 'timestamp',
+      headerName: 'Timestamp',
+      width: 200,
+      renderCell: (params: GridRenderCellParams<BookHistory>) =>
+        new Date(params.value as string).toLocaleString()
+    }
   ]
 
   return (
