@@ -21,7 +21,8 @@ public class BookService : IBookService
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
-            query = query.Where(b => b.Title.Contains(request.SearchTerm) || b.Author.Contains(request.SearchTerm));
+            var term = request.SearchTerm.Trim().ToLower();
+            query = query.Where(b => b.Title.ToLower().Contains(term) || b.Author.ToLower().Contains(term));
         }
 
         var totalCount = await query.CountAsync();

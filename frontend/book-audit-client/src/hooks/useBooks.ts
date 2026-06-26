@@ -4,7 +4,14 @@ import type { BookListRequest, PagedResult, Book, UpdateBookRequest, BookHistory
 
 export const useBooks = (request: BookListRequest) =>
   useQuery<PagedResult<Book>, Error>({
-    queryKey: ['books', request],
+    queryKey: [
+      'books',
+      request.pageNumber,
+      request.pageSize,
+      request.searchTerm,
+      request.sortColumn,
+      request.sortDirection
+    ],
     queryFn: () => getBooks(request)
   })
 
