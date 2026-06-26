@@ -18,3 +18,8 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# SQLite / Docker data
+*.db
+*.db-journal
+/data
