@@ -1,4 +1,4 @@
-import { Box, Button, DialogActions, DialogContent, IconButton, InputAdornment, TextField } from '@mui/material'
+import { Box, Button, DialogActions, DialogContent, IconButton, InputAdornment, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { GridPaginationModel, GridSortModel, GridRenderCellParams } from '@mui/x-data-grid'
 import AddIcon from '@mui/icons-material/Add'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -19,13 +19,14 @@ import type { BookFormData } from '../schemas/bookSchema'
 import type { Book } from '../types/book'
 
 const columns = [
-  { field: 'title', headerName: 'Title', flex: 2 },
-  { field: 'authors', headerName: 'Authors', flex: 1, valueGetter: (value: string[]) => value.join(', ') },
-  { field: 'publishDate', headerName: 'Published', flex: 1 },
+  { field: 'title', headerName: 'Title', flex: 1, sortable: true },
+  { field: 'authors', headerName: 'Authors', flex: 1, sortable: true, valueGetter: (value: string[]) => value.join(', ') },
+  { field: 'publishDate', headerName: 'Published', width: 120, sortable: true },
   {
     field: 'createdAt',
     headerName: 'Created',
-    flex: 1,
+    width: 120,
+    sortable: true,
     valueFormatter: (value: string) => new Date(value).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -122,67 +123,91 @@ export function BookListPage() {
   const actionColumn = {
     field: 'actions',
     headerName: 'Actions',
-    width: 160,
+    width: 130,
     sortable: false,
     renderCell: (params: GridRenderCellParams<Book>) => (
-      <Box>
-        <IconButton onClick={(e) => { e.stopPropagation(); handleHistory(params.row); }} title="History">
+      <Stack direction="row" spacing={0.5}>
+        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleHistory(params.row); }} title="History">
           <HistoryIcon />
         </IconButton>
-        <IconButton onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }} title="Edit">
+        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }} title="Edit">
           <EditIcon />
         </IconButton>
-        <IconButton onClick={(e) => { e.stopPropagation(); handleDelete(params.row); }} title="Delete">
+        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(params.row); }} title="Delete">
           <DeleteIcon />
         </IconButton>
-      </Box>
+      </Stack>
     )
   }
 
   return (
     <Box>
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <TextField
-          label="Search"
-          placeholder="Search by title or author (min 3 chars)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          fullWidth
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              ),
-              endAdornment: search ? (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setSearch('')} edge="end">
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              ) : null
-            }
-          }}
+      <Paper
+        sx={{
+          mb: 3,
+          p: 2.5,
+          borderRadius: 2,
+          boxShadow: 2,
+          background: 'linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%)'
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+            Books
+          </Typography>
+          <TextField
+            placeholder="Search by title, description or authors (min 3 chars)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ backgroundColor: 'white', borderRadius: 1 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: search ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setSearch('')} edge="end">
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null
+              }
+            }}
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAdd}
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            Add Book
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Paper sx={{ borderRadius: 2, overflow: 'hidden', backgroundColor: '#fafbfc' }}>
+        <DataTable
+          rows={data?.items ?? []}
+          columns={[...columns, actionColumn]}
+          rowCount={data?.totalCount ?? 0}
+          loading={isLoading}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          pageSizeOptions={[5, 10, 25]}
+          paginationMode="server"
+          sortingMode="server"
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
+          onRowClick={(params) => navigate(`/books/${params.row.slug}`)}
+          height={600}
         />
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
-          Add Book
-        </Button>
-      </Box>
-      <DataTable
-        rows={data?.items ?? []}
-        columns={[...columns, actionColumn]}
-        rowCount={data?.totalCount ?? 0}
-        loading={isLoading}
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
-        pageSizeOptions={[5, 10, 25]}
-        paginationMode="server"
-        sortingMode="server"
-        sortModel={sortModel}
-        onSortModelChange={setSortModel}
-        onRowClick={(params) => navigate(`/books/${params.row.slug}`)}
-      />
+      </Paper>
+
       <BookDialog
         open={dialogOpen}
         title={editingBook ? 'Edit Book' : 'Add Book'}

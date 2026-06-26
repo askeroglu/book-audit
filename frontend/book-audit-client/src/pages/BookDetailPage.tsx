@@ -18,6 +18,7 @@ import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import EditIcon from '@mui/icons-material/Edit'
+import dayjs from 'dayjs'
 import type { GridColDef, GridPaginationModel, GridSortModel } from '@mui/x-data-grid'
 import { DataTable } from '../components/DataTable'
 import HistoryTimeline from '../components/HistoryTimeline'
@@ -34,7 +35,7 @@ const historyColumns: GridColDef<BookHistoryEntry>[] = [
     headerName: 'Changed At',
     width: 190,
     sortable: true,
-    valueFormatter: (value: string) => new Date(value).toLocaleString()
+    valueFormatter: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm')
   },
   { field: 'action', headerName: 'Action', width: 140, sortable: true },
   { field: 'propertyName', headerName: 'Property', width: 160, sortable: true },
@@ -117,7 +118,7 @@ export function BookDetailPage() {
         </Button>
       </Stack>
 
-      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
+      <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2, background: 'linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%)' }}>
         <CardContent>
           <Typography variant="h4" sx={{ mb: 2, fontWeight: 700 }}>
             {book.title}
@@ -153,11 +154,11 @@ export function BookDetailPage() {
         </CardContent>
       </Card>
 
-      <Paper sx={{ borderRadius: 2, boxShadow: 1 }}>
+      <Paper sx={{ borderRadius: 2, boxShadow: 1, backgroundColor: '#fafbfc' }}>
         <Tabs
           value={tab}
           onChange={(_, value) => setTab(value)}
-          sx={{ px: 2, pt: 1, borderBottom: 1, borderColor: 'divider' }}
+          sx={{ px: 2, pt: 1, borderBottom: 1, borderColor: 'divider', backgroundColor: 'white' }}
         >
           <Tab label="History Timeline" />
           <Tab label="History List" />
@@ -216,6 +217,7 @@ export function BookDetailPage() {
                 sortingMode="server"
                 sortModel={sortModel}
                 onSortModelChange={setSortModel}
+                height={400}
               />
             </Box>
           )}

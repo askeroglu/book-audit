@@ -6,7 +6,22 @@ import { RouterProvider } from 'react-router-dom'
 import { SnackbarProvider } from './context/SnackbarContext'
 import { router } from './App'
 
-const theme = createTheme()
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#3f51b5',
+      dark: '#303f9f',
+    },
+    background: {
+      default: '#f5f7fa',
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+  },
+})
+
 const queryClient = new QueryClient()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -19,5 +34,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </ThemeProvider>
       </QueryClientProvider>
     </SnackbarProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 )
