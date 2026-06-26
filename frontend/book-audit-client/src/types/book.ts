@@ -1,22 +1,32 @@
 export interface Book {
   id: number
   title: string
-  author: string
-  description?: string
   slug: string
+  shortDescription: string | null
+  publishDate: string
   createdAt: string
+  authors: string[]
+}
+
+export interface BookFormData {
+  title: string
+  shortDescription?: string
+  publishDate: string
+  authorNames: string
 }
 
 export interface CreateBookRequest {
   title: string
-  author: string
-  description?: string
+  shortDescription?: string
+  publishDate: string
+  authorNames: string[]
 }
 
 export interface UpdateBookRequest {
   title: string
-  author: string
-  description?: string
+  shortDescription?: string
+  publishDate: string
+  authorNames: string[]
 }
 
 export interface BookListRequest {

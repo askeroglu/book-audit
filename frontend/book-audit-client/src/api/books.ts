@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { Book, BookListRequest, PagedResult, CreateBookRequest, UpdateBookRequest } from '../types/book'
+import type { Book, BookListRequest, PagedResult, CreateBookRequest, UpdateBookRequest, BookFormData } from '../types/book'
 
 export const getBooks = async (request: BookListRequest): Promise<PagedResult<Book>> => {
   const params = new URLSearchParams()
@@ -17,16 +17,28 @@ export const getBook = async (slug: string): Promise<Book> => {
   return response.data
 }
 
-export const createBook = async (request: CreateBookRequest): Promise<Book> => {
-  const response = await apiClient.post<Book>('/books', request)
+export const createBook = async (data: BookFormData): Promise<Book> => {
+  const response = await apiClient.post<Book>('/books', toRequest(data))
   return response.data
 }
 
-export const updateBook = async (slug: string, request: UpdateBookRequest): Promise<Book> => {
-  const response = await apiClient.put<Book>(`/books/${slug}`, request)
+export const updateBook = async (slug: string, data: BookFormData): Promise<Book> => {
+  const response = await apiClient.put<Book>(`/books/${slug}`, toRequest(data))
   return response.data
 }
 
 export const deleteBook = async (slug: string): Promise<void> => {
   await apiClient.delete(`/books/${slug}`)
+}
+
+function toRequest(data: BookFormData): CreateBookRequest | UpdateBookRequest {
+  return {
+    title: data.title.trim(),
+    shortDescription: data.shortDescription?.trim() || undefined,
+    publishDate: data.publishDate,
+    authorNames: data.authorNames
+      .split(',')
+      .map((n) => n.trim())
+      .filter(Boolean)
+  }
 }

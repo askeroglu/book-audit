@@ -16,11 +16,14 @@ import type { BookHistoryEntry } from '../types/book'
 function getActionChipColor(action: string): 'success' | 'error' | 'info' | 'warning' | 'default' {
   switch (action) {
     case 'Created':
+    case 'AuthorAdded':
       return 'success'
     case 'Updated':
       return 'info'
     case 'Deleted':
       return 'error'
+    case 'AuthorRemoved':
+      return 'warning'
     default:
       return 'default'
   }
@@ -29,11 +32,14 @@ function getActionChipColor(action: string): 'success' | 'error' | 'info' | 'war
 function getActionDotColor(action: string): 'success' | 'error' | 'info' | 'warning' | 'grey' {
   switch (action) {
     case 'Created':
+    case 'AuthorAdded':
       return 'success'
     case 'Updated':
       return 'info'
     case 'Deleted':
       return 'error'
+    case 'AuthorRemoved':
+      return 'warning'
     default:
       return 'grey'
   }

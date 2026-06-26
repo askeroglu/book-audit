@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
+import CircularProgress from '@mui/material/CircularProgress'
 import Divider from '@mui/material/Divider'
 import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
@@ -16,12 +17,15 @@ import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import EditIcon from '@mui/icons-material/Edit'
 import type { GridColDef, GridPaginationModel, GridSortModel } from '@mui/x-data-grid'
 import { DataTable } from '../components/DataTable'
 import HistoryTimeline from '../components/HistoryTimeline'
-import { useBook } from '../hooks/useBooks'
+import { BookDialog } from '../components/BookDialog'
+import { useBook, useUpdateBook } from '../hooks/useBooks'
 import { useBookHistory, useAllBookHistory } from '../hooks/useBookHistory'
 import { useSnackbar } from '../hooks/useSnackbar'
+import type { BookFormData } from '../schemas/bookSchema'
 import type { BookHistoryEntry } from '../types/book'
 
 const historyColumns: GridColDef<BookHistoryEntry>[] = [
@@ -41,7 +45,9 @@ const actionOptions = [
   { value: 'All', label: 'All' },
   { value: 'Created', label: 'Created' },
   { value: 'Updated', label: 'Updated' },
-  { value: 'Deleted', label: 'Deleted' }
+  { value: 'Deleted', label: 'Deleted' },
+  { value: 'AuthorAdded', label: 'Author Added' },
+  { value: 'AuthorRemoved', label: 'Author Removed' }
 ]
 
 export function BookDetailPage() {
@@ -50,6 +56,7 @@ export function BookDetailPage() {
   const { showMessage } = useSnackbar()
   const { data: book, isLoading: bookLoading, error: bookError } = useBook(slug ?? '')
 
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [tab, setTab] = useState(0)
   const [actionFilter, setActionFilter] = useState('All')
   const [propertyFilter, setPropertyFilter] = useState('All')
@@ -57,10 +64,7 @@ export function BookDetailPage() {
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 })
   const [sortModel, setSortModel] = useState<GridSortModel>([])
 
-  const handleSortModelChange = useCallback((model: GridSortModel) => {
-    setSortModel(model)
-    setPaginationModel((p) => ({ ...p, page: 0 }))
-  }, [])
+  const updateBook = useUpdateBook()
 
   const historyFilters = {
     action: actionFilter === 'All' ? undefined : actionFilter,
@@ -81,7 +85,21 @@ export function BookDetailPage() {
     if (bookError) showMessage('Failed to load book details', 'error')
   }, [bookError, showMessage])
 
-  if (bookLoading) return <Typography>Loading...</Typography>
+  const handleSubmit = (formData: BookFormData) => {
+    if (!book) return
+    updateBook.mutate({ slug: book.slug, request: formData }, {
+      onSuccess: (updatedBook) => {
+        showMessage('Book updated', 'success')
+        setDialogOpen(false)
+        if (updatedBook.slug !== slug) {
+          navigate(`/books/${updatedBook.slug}`, { replace: true })
+        }
+      },
+      onError: () => showMessage('Failed to update book', 'error')
+    })
+  }
+
+  if (bookLoading) return <CircularProgress />
 
   if (!book) {
     return <Typography color="error">Book not found.</Typography>
@@ -94,25 +112,41 @@ export function BookDetailPage() {
           Back
         </Button>
         <Box sx={{ flexGrow: 1 }} />
+        <Button variant="outlined" startIcon={<EditIcon />} onClick={() => setDialogOpen(true)}>
+          Edit
+        </Button>
       </Stack>
 
       <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 2 }}>
         <CardContent>
-          <Typography variant="h4" fontWeight={700} sx={{ mb: 2 }}>
+          <Typography variant="h4" sx={{ mb: 2, fontWeight: 700 }}>
             {book.title}
           </Typography>
           <Stack spacing={2}>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography variant="body1" color="text.secondary" sx={{ minWidth: 90 }}>
-                Author
+                Authors
               </Typography>
-              <Chip label={book.author} size="small" color="primary" variant="outlined" />
+              {book.authors.map((author) => (
+                <Chip key={author} label={author} size="small" color="primary" variant="outlined" />
+              ))}
             </Stack>
             <Divider />
-            {book.description && (
-              <Typography variant="body2" color="text.secondary">
-                {book.description}
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography variant="body1" color="text.secondary" sx={{ minWidth: 90 }}>
+                Published
               </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                {book.publishDate}
+              </Typography>
+            </Stack>
+            {book.shortDescription && (
+              <>
+                <Divider />
+                <Typography variant="body2" color="text.secondary">
+                  {book.shortDescription}
+                </Typography>
+              </>
             )}
             <Chip label={book.slug} sx={{ alignSelf: 'flex-start' }} />
           </Stack>
@@ -164,8 +198,9 @@ export function BookDetailPage() {
                     <MenuItem value="All">All</MenuItem>
                     <MenuItem value="Book">Book</MenuItem>
                     <MenuItem value="Title">Title</MenuItem>
-                    <MenuItem value="Author">Author</MenuItem>
-                    <MenuItem value="Description">Description</MenuItem>
+                    <MenuItem value="ShortDescription">Short Description</MenuItem>
+                    <MenuItem value="PublishDate">Publish Date</MenuItem>
+                    <MenuItem value="Authors">Authors</MenuItem>
                   </Select>
                 </FormControl>
               </Stack>
@@ -180,12 +215,26 @@ export function BookDetailPage() {
                 paginationMode="server"
                 sortingMode="server"
                 sortModel={sortModel}
-                onSortModelChange={handleSortModelChange}
+                onSortModelChange={setSortModel}
               />
             </Box>
           )}
         </Box>
       </Paper>
+
+      <BookDialog
+        open={dialogOpen}
+        title="Edit Book"
+        submitLabel="Update"
+        defaultValues={{
+          title: book.title,
+          shortDescription: book.shortDescription ?? '',
+          publishDate: book.publishDate,
+          authorNames: book.authors.join(', ')
+        }}
+        onClose={() => setDialogOpen(false)}
+        onSubmit={handleSubmit}
+      />
     </Box>
   )
 }

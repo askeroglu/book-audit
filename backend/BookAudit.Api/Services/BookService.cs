@@ -17,24 +17,35 @@ public class BookService : IBookService
 
     public async Task<PagedResult<BookDto>> GetAllAsync(BookListRequest request)
     {
-        var query = _context.Books.AsNoTracking();
+        var query = _context.Books
+            .AsNoTracking()
+            .Include(b => b.BookAuthors)
+            .ThenInclude(ba => ba.Author)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
-            var term = request.SearchTerm.Trim().ToLower();
-            query = query.Where(b => b.Title.ToLower().Contains(term) || b.Author.ToLower().Contains(term));
+            var search = request.SearchTerm.Trim();
+            var pattern = $"%{search}%";
+            query = query.Where(b =>
+                EF.Functions.Like(b.Title, pattern) ||
+                (b.ShortDescription != null && EF.Functions.Like(b.ShortDescription, pattern)) ||
+                b.BookAuthors.Any(ba => EF.Functions.Like(ba.Author.Name, pattern)));
         }
 
         var totalCount = await query.CountAsync();
 
-        var validColumns = new[] { "title", "author", "createdAt" };
+        var validColumns = new[] { "title", "authors", "publishDate", "createdAt" };
         var sortColumn = validColumns.Contains(request.SortColumn?.ToLower()) ? request.SortColumn!.ToLower() : "createdAt";
         var sortDirection = request.SortDirection?.ToLower() == "desc" ? "desc" : "asc";
 
         query = sortColumn switch
         {
             "title" => sortDirection == "desc" ? query.OrderByDescending(b => b.Title) : query.OrderBy(b => b.Title),
-            "author" => sortDirection == "desc" ? query.OrderByDescending(b => b.Author) : query.OrderBy(b => b.Author),
+            "authors" => sortDirection == "desc"
+                ? query.OrderByDescending(b => b.BookAuthors.Select(ba => ba.Author.Name).Min())
+                : query.OrderBy(b => b.BookAuthors.Select(ba => ba.Author.Name).Min()),
+            "publishdate" => sortDirection == "desc" ? query.OrderByDescending(b => b.PublishDate) : query.OrderBy(b => b.PublishDate),
             _ => sortDirection == "desc" ? query.OrderByDescending(b => b.CreatedAt) : query.OrderBy(b => b.CreatedAt)
         };
 
@@ -55,7 +66,11 @@ public class BookService : IBookService
 
     public async Task<BookDto?> GetBySlugAsync(string slug)
     {
-        var book = await _context.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Slug == slug);
+        var book = await _context.Books
+            .AsNoTracking()
+            .Include(b => b.BookAuthors)
+            .ThenInclude(ba => ba.Author)
+            .FirstOrDefaultAsync(b => b.Slug == slug);
         return book == null ? null : MapToDto(book);
     }
 
@@ -63,25 +78,31 @@ public class BookService : IBookService
     {
         var book = new Book
         {
-            Title = request.Title,
-            Author = request.Author,
-            Description = request.Description,
-            Slug = await GenerateUniqueSlug(request.Title)
+            Title = request.Title.Trim(),
+            Slug = await GenerateUniqueSlug(request.Title.Trim()),
+            ShortDescription = request.ShortDescription?.Trim(),
+            PublishDate = request.PublishDate
         };
         _context.Books.Add(book);
+        await SyncAuthorsAsync(book, request.AuthorNames);
         await _context.SaveChangesAsync();
         return MapToDto(book);
     }
 
     public async Task<BookDto?> UpdateAsync(string slug, UpdateBookRequest request)
     {
-        var book = await _context.Books.FirstOrDefaultAsync(b => b.Slug == slug);
+        var book = await _context.Books
+            .Include(b => b.BookAuthors)
+            .ThenInclude(ba => ba.Author)
+            .FirstOrDefaultAsync(b => b.Slug == slug);
         if (book == null) return null;
 
-        book.Title = request.Title;
-        book.Author = request.Author;
-        book.Description = request.Description;
-        book.Slug = await GenerateUniqueSlug(request.Title, book.Id);
+        book.Title = request.Title.Trim();
+        book.Slug = await GenerateUniqueSlug(request.Title.Trim(), book.Id);
+        book.ShortDescription = request.ShortDescription?.Trim();
+        book.PublishDate = request.PublishDate;
+
+        await SyncAuthorsAsync(book, request.AuthorNames);
 
         await _context.SaveChangesAsync();
         return MapToDto(book);
@@ -96,31 +117,6 @@ public class BookService : IBookService
         await _context.SaveChangesAsync();
         return true;
     }
-
-    private async Task<string> GenerateUniqueSlug(string title, int? excludeId = null)
-    {
-        var baseSlug = SlugGenerator.Generate(title);
-        var slug = baseSlug;
-        var counter = 2;
-
-        while (await _context.Books.IgnoreQueryFilters().AnyAsync(b => b.Slug == slug && b.Id != excludeId))
-        {
-            slug = $"{baseSlug}-{counter}";
-            counter++;
-        }
-
-        return slug;
-    }
-
-    private static BookDto MapToDto(Book book) => new()
-    {
-        Id = book.Id,
-        Title = book.Title,
-        Author = book.Author,
-        Description = book.Description,
-        Slug = book.Slug,
-        CreatedAt = book.CreatedAt
-    };
 
     public async Task<PagedResult<BookHistoryDto>> GetBookHistoryAsync(string slug, HistoryQueryParameters query)
     {
@@ -147,8 +143,8 @@ public class BookService : IBookService
         q = query.SortBy?.ToLowerInvariant() switch
         {
             "action" => query.SortDescending ? q.OrderByDescending(h => h.Action) : q.OrderBy(h => h.Action),
-            "propertyname" or "property" => query.SortDescending ? q.OrderByDescending(h => h.PropertyName) : q.OrderBy(h => h.PropertyName),
-            "changedat" or "changed-at" => query.SortDescending ? q.OrderByDescending(h => h.ChangedAt) : q.OrderBy(h => h.ChangedAt),
+            "propertyname" => query.SortDescending ? q.OrderByDescending(h => h.PropertyName) : q.OrderBy(h => h.PropertyName),
+            "changedat" => query.SortDescending ? q.OrderByDescending(h => h.ChangedAt) : q.OrderBy(h => h.ChangedAt),
             _ => q.OrderByDescending(h => h.ChangedAt)
         };
 
@@ -180,4 +176,70 @@ public class BookService : IBookService
             PageSize = pageSize
         };
     }
+
+    private async Task SyncAuthorsAsync(Book book, List<string> authorNames)
+    {
+        var normalizedNames = authorNames
+            .Select(n => n.Trim())
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Distinct()
+            .ToList();
+
+        var existingAuthors = await _context.Authors
+            .Where(a => normalizedNames.Contains(a.Name))
+            .ToListAsync();
+
+        var currentNames = book.BookAuthors
+            .Select(ba => ba.Author.Name)
+            .ToList();
+
+        var namesToAdd = normalizedNames.Except(currentNames).ToList();
+        var namesToRemove = currentNames.Except(normalizedNames).ToList();
+
+        foreach (var name in namesToRemove)
+        {
+            var bookAuthor = book.BookAuthors.First(ba => ba.Author.Name == name);
+            book.BookAuthors.Remove(bookAuthor);
+        }
+
+        foreach (var name in namesToAdd)
+        {
+            var author = existingAuthors.FirstOrDefault(a => a.Name == name);
+            if (author is null)
+            {
+                author = new Author { Name = name };
+                _context.Authors.Add(author);
+            }
+            book.BookAuthors.Add(new BookAuthor { Author = author });
+        }
+    }
+
+    private async Task<string> GenerateUniqueSlug(string title, int? excludeId = null)
+    {
+        var baseSlug = SlugGenerator.Generate(title);
+        var slug = baseSlug;
+        var counter = 2;
+
+        while (await _context.Books.IgnoreQueryFilters().AnyAsync(b => b.Slug == slug && b.Id != excludeId))
+        {
+            slug = $"{baseSlug}-{counter}";
+            counter++;
+        }
+
+        return slug;
+    }
+
+    private static BookDto MapToDto(Book book) => new()
+    {
+        Id = book.Id,
+        Title = book.Title,
+        Slug = book.Slug,
+        ShortDescription = book.ShortDescription,
+        PublishDate = book.PublishDate,
+        CreatedAt = book.CreatedAt,
+        Authors = book.BookAuthors
+            .Select(ba => ba.Author.Name)
+            .OrderBy(n => n)
+            .ToList()
+    };
 }

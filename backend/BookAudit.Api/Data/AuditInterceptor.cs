@@ -32,16 +32,17 @@ public class AuditInterceptor : SaveChangesInterceptor
         var now = DateTime.UtcNow;
 
         var bookEntries = context.ChangeTracker.Entries<Book>().ToList();
+        var bookAuthorEntries = context.ChangeTracker.Entries<BookAuthor>().ToList();
 
         foreach (var entry in bookEntries)
         {
-            var bookId = entry.Entity.Id;
+            var book = entry.Entity;
 
             if (entry.State == EntityState.Added)
             {
                 history.Add(new BookHistory
                 {
-                    BookId = bookId,
+                    Book = book,
                     ChangedAt = now,
                     Action = "Created",
                     PropertyName = "Book",
@@ -53,7 +54,7 @@ public class AuditInterceptor : SaveChangesInterceptor
                 foreach (var property in entry.Properties)
                 {
                     var propertyName = property.Metadata.Name;
-                    if (propertyName is nameof(Book.Title) or nameof(Book.Slug) or nameof(Book.IsDeleted) or nameof(Book.Id) or nameof(Book.CreatedAt))
+                    if (propertyName is nameof(Book.Title) or nameof(Book.Slug) or nameof(Book.IsDeleted) or nameof(Book.Id) or nameof(Book.CreatedAt) or nameof(Book.BookAuthors) or nameof(Book.History))
                         continue;
 
                     var currentValue = property.CurrentValue;
@@ -62,7 +63,7 @@ public class AuditInterceptor : SaveChangesInterceptor
                     var displayValue = FormatValue(currentValue);
                     history.Add(new BookHistory
                     {
-                        BookId = bookId,
+                        Book = book,
                         ChangedAt = now,
                         Action = "Created",
                         PropertyName = propertyName,
@@ -76,7 +77,7 @@ public class AuditInterceptor : SaveChangesInterceptor
             {
                 history.Add(new BookHistory
                 {
-                    BookId = bookId,
+                    Book = book,
                     ChangedAt = now,
                     Action = "Deleted",
                     PropertyName = "Book",
@@ -94,7 +95,7 @@ public class AuditInterceptor : SaveChangesInterceptor
                 {
                     history.Add(new BookHistory
                     {
-                        BookId = bookId,
+                        Book = book,
                         ChangedAt = now,
                         Action = "Deleted",
                         PropertyName = "Book",
@@ -116,7 +117,7 @@ public class AuditInterceptor : SaveChangesInterceptor
 
                         history.Add(new BookHistory
                         {
-                            BookId = bookId,
+                            Book = book,
                             ChangedAt = now,
                             Action = "Updated",
                             PropertyName = displayName,
@@ -129,6 +130,47 @@ public class AuditInterceptor : SaveChangesInterceptor
             }
         }
 
+        foreach (var entry in bookAuthorEntries)
+        {
+            var book = entry.Entity.Book
+                ?? context.ChangeTracker.Entries<Book>()
+                    .Select(e => e.Entity)
+                    .FirstOrDefault(b => b.Id == entry.Entity.BookId);
+            if (book is null) continue;
+
+            var authorId = entry.Entity.AuthorId;
+            var authorName = entry.Entity.Author?.Name
+                ?? context.Set<Author>().Local.FirstOrDefault(a => a.Id == authorId)?.Name
+                ?? "Unknown author";
+
+            if (entry.State == EntityState.Added)
+            {
+                history.Add(new BookHistory
+                {
+                    Book = book,
+                    ChangedAt = now,
+                    Action = "AuthorAdded",
+                    PropertyName = "Authors",
+                    OldValue = null,
+                    NewValue = authorName,
+                    Description = $"Author '{authorName}' was added"
+                });
+            }
+            else if (entry.State == EntityState.Deleted)
+            {
+                history.Add(new BookHistory
+                {
+                    Book = book,
+                    ChangedAt = now,
+                    Action = "AuthorRemoved",
+                    PropertyName = "Authors",
+                    OldValue = authorName,
+                    NewValue = null,
+                    Description = $"Author '{authorName}' was removed"
+                });
+            }
+        }
+
         if (history.Count > 0)
         {
             context.Set<BookHistory>().AddRange(history);
@@ -138,6 +180,7 @@ public class AuditInterceptor : SaveChangesInterceptor
     private static string? FormatValue(object? value)
     {
         if (value is null) return null;
+        if (value is DateOnly dateOnly) return dateOnly.ToString("yyyy-MM-dd");
         if (value is string s) return s;
         return JsonSerializer.Serialize(value);
     }

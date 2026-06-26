@@ -11,9 +11,8 @@ export function Layout() {
         <Toolbar>
           <Stack
             direction="row"
-            alignItems="center"
             onClick={() => navigate('/')}
-            sx={{ cursor: 'pointer' }}
+            sx={{ cursor: 'pointer', alignItems: 'center' }}
           >
             <IconButton color="inherit" edge="start" sx={{ mr: 1 }}>
               <LibraryBooksIcon />

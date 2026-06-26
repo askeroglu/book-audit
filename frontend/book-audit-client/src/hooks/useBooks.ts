@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getBooks, getBook, createBook, updateBook, deleteBook } from '../api/books'
-import type { BookListRequest, PagedResult, Book, UpdateBookRequest } from '../types/book'
+import type { BookListRequest, PagedResult, Book, BookFormData } from '../types/book'
 
 export const useBooks = (request: BookListRequest) =>
   useQuery<PagedResult<Book>, Error>({
@@ -35,11 +35,12 @@ export const useCreateBook = () => {
 export const useUpdateBook = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ slug, request }: { slug: string; request: UpdateBookRequest }) =>
+    mutationFn: ({ slug, request }: { slug: string; request: BookFormData }) =>
       updateBook(slug, request),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['books'] })
       queryClient.invalidateQueries({ queryKey: ['books', variables.slug] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
     }
   })
 }
