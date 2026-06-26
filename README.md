@@ -36,8 +36,7 @@ A simple full-stack app for tracking a personal book collection. Every change is
 ```
 book-audit/
 ├── backend/
-│   ├── BookAudit.Api/          # Web API
-│   └── BookAudit.Api.Tests/    # Unit tests
+│   ├── BookAudit.Api/          # Web API│ 
 └── frontend/
     └── book-audit-client/      # React SPA
 ```
