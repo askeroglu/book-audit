@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BookAudit.Api.Controllers;
 
 [ApiController]
-[Route("api/books/{bookId}/[controller]")]
+[Route("api/books/{bookId}/history")]
 public class BookHistoryController : ControllerBase
 {
     private readonly BookAuditDbContext _context;

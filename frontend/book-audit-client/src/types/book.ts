@@ -34,3 +34,12 @@ export interface PagedResult<T> {
   pageSize: number
   totalPages: number
 }
+
+export interface BookHistory {
+  id: number
+  bookId: number
+  bookSlug?: string
+  action: string
+  changes?: string
+  timestamp: string
+}
