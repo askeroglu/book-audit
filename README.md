@@ -93,11 +93,13 @@ Every create, update, delete, author addition or author removal is captured by a
 - Audit history is stored in the same SQLite database.
 
 
-<img width="2014" height="673" alt="image" src="https://github.com/user-attachments/assets/d67eb224-6f99-43a7-b23f-8b379e84f1d9" />
+<img width="2014" height="678" alt="image" src="https://github.com/user-attachments/assets/d67eb224-6f99-43a7-b23f-8b379e84f1d9" />
+
+<img width="814" height="678" alt="image" src="https://github.com/user-attachments/assets/7f2d5e60-a68f-48e5-b7eb-5a7f57edebc2" />
 
 <img width="718" height="678" alt="image" src="https://github.com/user-attachments/assets/92e4c1bb-ea7f-4f1b-8c16-65b7201c9613" />
 
-<img width="1998" height="1151" alt="image" src="https://github.com/user-attachments/assets/1e21d8f6-4abe-4c23-a327-c7480fb390e6" />
+<img width="1998" height="678" alt="image" src="https://github.com/user-attachments/assets/1e21d8f6-4abe-4c23-a327-c7480fb390e6" />
 
 
 
