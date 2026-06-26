@@ -1,8 +1,14 @@
 import { apiClient } from './client'
-import type { Book, CreateBookRequest, UpdateBookRequest } from '../types/book'
+import type { Book, BookListRequest, PagedResult, CreateBookRequest, UpdateBookRequest } from '../types/book'
 
-export const getBooks = async (): Promise<Book[]> => {
-  const response = await apiClient.get<Book[]>('/books')
+export const getBooks = async (request: BookListRequest): Promise<PagedResult<Book>> => {
+  const params = new URLSearchParams()
+  params.append('pageNumber', request.pageNumber.toString())
+  params.append('pageSize', request.pageSize.toString())
+  if (request.searchTerm) params.append('searchTerm', request.searchTerm)
+  if (request.sortColumn) params.append('sortColumn', request.sortColumn)
+  if (request.sortDirection) params.append('sortDirection', request.sortDirection)
+  const response = await apiClient.get<PagedResult<Book>>(`/books?${params.toString()}`)
   return response.data
 }
 

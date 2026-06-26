@@ -4,7 +4,7 @@ namespace BookAudit.Api.Services;
 
 public interface IBookService
 {
-    Task<IEnumerable<BookDto>> GetAllAsync();
+    Task<PagedResult<BookDto>> GetAllAsync(BookListRequest request);
     Task<BookDto?> GetByIdAsync(int id);
     Task<BookDto> CreateAsync(CreateBookRequest request);
     Task<BookDto?> UpdateAsync(int id, UpdateBookRequest request);

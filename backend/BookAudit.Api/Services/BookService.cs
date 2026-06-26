@@ -15,12 +15,41 @@ public class BookService : IBookService
         _context = context;
     }
 
-    public async Task<IEnumerable<BookDto>> GetAllAsync()
+    public async Task<PagedResult<BookDto>> GetAllAsync(BookListRequest request)
     {
-        return await _context.Books
-            .AsNoTracking()
+        var query = _context.Books.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            query = query.Where(b => b.Title.Contains(request.SearchTerm) || b.Author.Contains(request.SearchTerm));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        var validColumns = new[] { "title", "author", "createdAt" };
+        var sortColumn = validColumns.Contains(request.SortColumn?.ToLower()) ? request.SortColumn!.ToLower() : "createdAt";
+        var sortDirection = request.SortDirection?.ToLower() == "desc" ? "desc" : "asc";
+
+        query = sortColumn switch
+        {
+            "title" => sortDirection == "desc" ? query.OrderByDescending(b => b.Title) : query.OrderBy(b => b.Title),
+            "author" => sortDirection == "desc" ? query.OrderByDescending(b => b.Author) : query.OrderBy(b => b.Author),
+            _ => sortDirection == "desc" ? query.OrderByDescending(b => b.CreatedAt) : query.OrderBy(b => b.CreatedAt)
+        };
+
+        var items = await query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
             .Select(b => MapToDto(b))
             .ToListAsync();
+
+        return new PagedResult<BookDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize
+        };
     }
 
     public async Task<BookDto?> GetByIdAsync(int id)

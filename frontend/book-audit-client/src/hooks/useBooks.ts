@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getBooks, getBook, createBook, updateBook, deleteBook } from '../api/books'
-import type { Book, UpdateBookRequest } from '../types/book'
+import type { BookListRequest, PagedResult, Book, UpdateBookRequest } from '../types/book'
 
-export const useBooks = () =>
-  useQuery<Book[], Error>({
-    queryKey: ['books'],
-    queryFn: getBooks
+export const useBooks = (request: BookListRequest) =>
+  useQuery<PagedResult<Book>, Error>({
+    queryKey: ['books', request],
+    queryFn: () => getBooks(request)
   })
 
 export const useBook = (id: number) =>

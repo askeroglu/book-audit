@@ -18,3 +18,19 @@ export interface UpdateBookRequest {
   author: string
   description?: string
 }
+
+export interface BookListRequest {
+  pageNumber: number
+  pageSize: number
+  searchTerm?: string
+  sortColumn?: string
+  sortDirection?: string
+}
+
+export interface PagedResult<T> {
+  items: T[]
+  totalCount: number
+  pageNumber: number
+  pageSize: number
+  totalPages: number
+}
