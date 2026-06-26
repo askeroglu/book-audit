@@ -1,33 +1,22 @@
-import {
-  Box,
-  Button,
-  IconButton,
-  InputAdornment,
-  TextField,
-} from "@mui/material";
-import type {
-  GridPaginationModel,
-  GridSortModel,
-  GridRenderCellParams,
-} from "@mui/x-data-grid";
+import { Box, Button, DialogActions, DialogContent, IconButton, InputAdornment, TextField } from '@mui/material'
+import type { GridPaginationModel, GridSortModel, GridRenderCellParams } from '@mui/x-data-grid'
 import AddIcon from '@mui/icons-material/Add'
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  useBooks,
-  useCreateBook,
-  useUpdateBook,
-  useDeleteBook,
-} from "../hooks/useBooks";
-import { useSnackbar } from "../hooks/useSnackbar";
-import { DataTable } from "../components/DataTable";
-import { BookDialog } from "../components/BookDialog";
-import type { BookFormData } from "../schemas/bookSchema";
-import type { Book } from "../types/book";
+import ClearIcon from '@mui/icons-material/Clear'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import HistoryIcon from '@mui/icons-material/History'
+import SearchIcon from '@mui/icons-material/Search'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '../hooks/useBooks'
+import { useAllBookHistory } from '../hooks/useBookHistory'
+import { useSnackbar } from '../hooks/useSnackbar'
+import { DataTable } from '../components/DataTable'
+import { BookDialog } from '../components/BookDialog'
+import { DraggableDialog, DraggableDialogTitle } from '../components/DraggableDialog'
+import HistoryTimeline from '../components/HistoryTimeline'
+import type { BookFormData } from '../schemas/bookSchema'
+import type { Book } from '../types/book'
 
 const columns = [
   { field: "title", headerName: "Title", flex: 2 },
@@ -49,6 +38,10 @@ export function BookListPage() {
   ]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [historyDialog, setHistoryDialog] = useState<{
+    open: boolean;
+    book: Book | null;
+  }>({ open: false, book: null });
 
   useEffect(() => {
     const trimmed = search.trim();
@@ -70,6 +63,11 @@ export function BookListPage() {
     sortDirection: sortModel[0]?.sort ?? "desc",
   });
 
+  const { data: history } = useAllBookHistory(
+    historyDialog.book?.slug ?? "",
+    {},
+  );
+
   const createBook = useCreateBook();
   const updateBook = useUpdateBook();
   const deleteBook = useDeleteBook();
@@ -86,6 +84,14 @@ export function BookListPage() {
   const handleEdit = (book: Book) => {
     setEditingBook(book);
     setDialogOpen(true);
+  };
+
+  const handleHistory = (book: Book) => {
+    setHistoryDialog({ open: true, book });
+  };
+
+  const handleCloseHistory = () => {
+    setHistoryDialog({ open: false, book: null });
   };
 
   const handleDelete = (book: Book) => {
@@ -123,15 +129,25 @@ export function BookListPage() {
   const actionColumn = {
     field: "actions",
     headerName: "Actions",
-    width: 120,
+    width: 160,
     sortable: false,
     renderCell: (params: GridRenderCellParams<Book>) => (
       <Box>
         <IconButton
           onClick={(e) => {
             e.stopPropagation();
+            handleHistory(params.row);
+          }}
+          title="History"
+        >
+          <HistoryIcon />
+        </IconButton>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
             handleEdit(params.row);
           }}
+          title="Edit"
         >
           <EditIcon />
         </IconButton>
@@ -140,6 +156,7 @@ export function BookListPage() {
             e.stopPropagation();
             handleDelete(params.row);
           }}
+          title="Delete"
         >
           <DeleteIcon />
         </IconButton>
@@ -207,6 +224,22 @@ export function BookListPage() {
         onClose={() => setDialogOpen(false)}
         onSubmit={handleSubmit}
       />
+      <DraggableDialog
+        open={historyDialog.open}
+        onClose={handleCloseHistory}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DraggableDialogTitle onClose={handleCloseHistory}>
+          History — {historyDialog.book?.title}
+        </DraggableDialogTitle>
+        <DialogContent>
+          <HistoryTimeline entries={history?.items ?? []} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHistory}>Close</Button>
+        </DialogActions>
+      </DraggableDialog>
     </Box>
   );
 }
