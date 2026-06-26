@@ -9,6 +9,7 @@ public class BookAuditDbContext : DbContext
         : base(options) { }
 
     public DbSet<Book> Books => Set<Book>();
+    public DbSet<BookHistory> BookHistories => Set<BookHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
