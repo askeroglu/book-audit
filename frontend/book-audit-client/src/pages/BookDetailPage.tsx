@@ -1,29 +1,33 @@
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Paper,
-  Typography,
-} from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
-import { useBook, useBookHistory } from "../hooks/useBooks";
-import { HistoryTimeline } from "../components/HistoryTimeline";
-import { HistoryTable } from "../components/HistoryTable";
+import { Box, Button, Chip, CircularProgress, Paper, Typography } from '@mui/material'
+import { useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useBook, useBookHistory } from '../hooks/useBooks'
+import { useSnackbar } from '../hooks/useSnackbar'
+import { HistoryTimeline } from '../components/HistoryTimeline'
+import { HistoryTable } from '../components/HistoryTable'
 
 export function BookDetailPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const bookId = Number(id);
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { showMessage } = useSnackbar()
+  const bookId = Number(id)
 
-  const { data: book, isLoading: bookLoading } = useBook(bookId);
-  const { data: history, isLoading: historyLoading } = useBookHistory(bookId);
+  const { data: book, isLoading: bookLoading, error: bookError } = useBook(bookId)
+  const { data: history, isLoading: historyLoading, error: historyError } = useBookHistory(bookId)
 
-  if (bookLoading) return <CircularProgress />;
+  useEffect(() => {
+    if (bookError) showMessage('Failed to load book details', 'error')
+  }, [bookError, showMessage])
+
+  useEffect(() => {
+    if (historyError) showMessage('Failed to load history', 'error')
+  }, [historyError, showMessage])
+
+  if (bookLoading) return <CircularProgress />
 
   return (
     <Box>
-      <Button onClick={() => navigate("/")} sx={{ mb: 2 }}>
+      <Button onClick={() => navigate('/')} sx={{ mb: 2 }}>
         Back
       </Button>
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -41,9 +45,7 @@ export function BookDetailPage() {
         History
       </Typography>
 
-      {historyLoading ? (
-        <CircularProgress />
-      ) : (
+      {historyLoading ? <CircularProgress /> : (
         <>
           <HistoryTimeline history={history ?? []} />
           <Box sx={{ mt: 4 }}>
@@ -52,5 +54,5 @@ export function BookDetailPage() {
         </>
       )}
     </Box>
-  );
+  )
 }

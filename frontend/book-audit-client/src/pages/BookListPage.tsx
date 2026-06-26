@@ -1,9 +1,11 @@
 import { Box, Button, IconButton, TextField } from '@mui/material'
 import type { GridPaginationModel, GridSortModel, GridRenderCellParams } from '@mui/x-data-grid'
 import EditIcon from '@mui/icons-material/Edit'
-import { useState } from 'react'
+import DeleteIcon from '@mui/icons-material/Delete'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useBooks, useCreateBook, useUpdateBook } from '../hooks/useBooks'
+import { useBooks, useCreateBook, useUpdateBook, useDeleteBook } from '../hooks/useBooks'
+import { useSnackbar } from '../hooks/useSnackbar'
 import { DataTable } from '../components/DataTable'
 import { BookDialog } from '../components/BookDialog'
 import type { BookFormData } from '../schemas/bookSchema'
@@ -17,13 +19,14 @@ const columns = [
 
 export function BookListPage() {
   const navigate = useNavigate()
+  const { showMessage } = useSnackbar()
   const [search, setSearch] = useState('')
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 })
   const [sortModel, setSortModel] = useState<GridSortModel>([{ field: 'createdAt', sort: 'desc' }])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingBook, setEditingBook] = useState<Book | null>(null)
 
-  const { data, isLoading } = useBooks({
+  const { data, isLoading, error } = useBooks({
     pageNumber: paginationModel.page + 1,
     pageSize: paginationModel.pageSize,
     searchTerm: search,
@@ -33,6 +36,11 @@ export function BookListPage() {
 
   const createBook = useCreateBook()
   const updateBook = useUpdateBook()
+  const deleteBook = useDeleteBook()
+
+  useEffect(() => {
+    if (error) showMessage('Failed to load books', 'error')
+  }, [error, showMessage])
 
   const handleAdd = () => {
     setEditingBook(null)
@@ -44,14 +52,31 @@ export function BookListPage() {
     setDialogOpen(true)
   }
 
+  const handleDelete = (book: Book) => {
+    if (confirm('Are you sure you want to delete this book?')) {
+      deleteBook.mutate(book.id, {
+        onSuccess: () => showMessage('Book deleted', 'success'),
+        onError: () => showMessage('Failed to delete book', 'error')
+      })
+    }
+  }
+
   const handleSubmit = (formData: BookFormData) => {
     if (editingBook) {
       updateBook.mutate({ id: editingBook.id, request: formData }, {
-        onSuccess: () => setDialogOpen(false)
+        onSuccess: () => {
+          showMessage('Book updated', 'success')
+          setDialogOpen(false)
+        },
+        onError: () => showMessage('Failed to update book', 'error')
       })
     } else {
       createBook.mutate(formData, {
-        onSuccess: () => setDialogOpen(false)
+        onSuccess: () => {
+          showMessage('Book created', 'success')
+          setDialogOpen(false)
+        },
+        onError: () => showMessage('Failed to create book', 'error')
       })
     }
   }
@@ -59,12 +84,17 @@ export function BookListPage() {
   const actionColumn = {
     field: 'actions',
     headerName: 'Actions',
-    width: 80,
+    width: 120,
     sortable: false,
     renderCell: (params: GridRenderCellParams<Book>) => (
-      <IconButton onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }}>
-        <EditIcon />
-      </IconButton>
+      <Box>
+        <IconButton onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }}>
+          <EditIcon />
+        </IconButton>
+        <IconButton onClick={(e) => { e.stopPropagation(); handleDelete(params.row); }}>
+          <DeleteIcon />
+        </IconButton>
+      </Box>
     )
   }
 
