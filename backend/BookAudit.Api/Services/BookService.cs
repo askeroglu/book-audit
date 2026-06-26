@@ -1,5 +1,6 @@
 using BookAudit.Api.Data;
 using BookAudit.Api.Dtos;
+using BookAudit.Api.Helpers;
 using BookAudit.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +35,8 @@ public class BookService : IBookService
         {
             Title = request.Title,
             Author = request.Author,
-            Description = request.Description
+            Description = request.Description,
+            Slug = await GenerateUniqueSlug(request.Title)
         };
         _context.Books.Add(book);
         await _context.SaveChangesAsync();
@@ -49,6 +51,7 @@ public class BookService : IBookService
         book.Title = request.Title;
         book.Author = request.Author;
         book.Description = request.Description;
+        book.Slug = await GenerateUniqueSlug(request.Title, book.Id);
 
         await _context.SaveChangesAsync();
         return MapToDto(book);
@@ -59,9 +62,24 @@ public class BookService : IBookService
         var book = await _context.Books.FindAsync(id);
         if (book == null) return false;
 
-        _context.Books.Remove(book);
+        book.IsDeleted = true;
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    private async Task<string> GenerateUniqueSlug(string title, int? excludeId = null)
+    {
+        var baseSlug = SlugGenerator.Generate(title);
+        var slug = baseSlug;
+        var counter = 2;
+
+        while (await _context.Books.AnyAsync(b => b.Slug == slug && b.Id != excludeId))
+        {
+            slug = $"{baseSlug}-{counter}";
+            counter++;
+        }
+
+        return slug;
     }
 
     private static BookDto MapToDto(Book book) => new()
@@ -70,6 +88,7 @@ public class BookService : IBookService
         Title = book.Title,
         Author = book.Author,
         Description = book.Description,
+        Slug = book.Slug,
         CreatedAt = book.CreatedAt
     };
 }
