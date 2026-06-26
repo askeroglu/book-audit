@@ -76,36 +76,70 @@ public class BookService : IBookService
 
     public async Task<BookDto> CreateAsync(CreateBookRequest request)
     {
-        var book = new Book
+        const int maxAttempts = 3;
+        var title = request.Title.Trim();
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            Title = request.Title.Trim(),
-            Slug = await GenerateUniqueSlug(request.Title.Trim()),
-            ShortDescription = request.ShortDescription?.Trim(),
-            PublishDate = request.PublishDate
-        };
-        _context.Books.Add(book);
-        await SyncAuthorsAsync(book, request.AuthorNames);
-        await _context.SaveChangesAsync();
-        return MapToDto(book);
+            try
+            {
+                var book = new Book
+                {
+                    Title = title,
+                    Slug = await GenerateUniqueSlug(title),
+                    ShortDescription = request.ShortDescription?.Trim(),
+                    PublishDate = request.PublishDate
+                };
+                _context.Books.Add(book);
+                await SyncAuthorsAsync(book, request.AuthorNames);
+                await _context.SaveChangesAsync();
+                return MapToDto(book);
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                _context.ChangeTracker.Clear();
+                if (attempt == maxAttempts - 1)
+                    throw new InvalidOperationException("Could not generate a unique slug after multiple attempts.", ex);
+            }
+        }
+
+        throw new InvalidOperationException("Could not generate a unique slug.");
     }
 
     public async Task<BookDto?> UpdateAsync(string slug, UpdateBookRequest request)
     {
-        var book = await _context.Books
-            .Include(b => b.BookAuthors)
-            .ThenInclude(ba => ba.Author)
-            .FirstOrDefaultAsync(b => b.Slug == slug);
-        if (book == null) return null;
+        const int maxAttempts = 3;
+        var title = request.Title.Trim();
 
-        book.Title = request.Title.Trim();
-        book.Slug = await GenerateUniqueSlug(request.Title.Trim(), book.Id);
-        book.ShortDescription = request.ShortDescription?.Trim();
-        book.PublishDate = request.PublishDate;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                var book = await _context.Books
+                    .Include(b => b.BookAuthors)
+                    .ThenInclude(ba => ba.Author)
+                    .FirstOrDefaultAsync(b => b.Slug == slug);
+                if (book == null) return null;
 
-        await SyncAuthorsAsync(book, request.AuthorNames);
+                book.Title = title;
+                book.Slug = await GenerateUniqueSlug(title, book.Id);
+                book.ShortDescription = request.ShortDescription?.Trim();
+                book.PublishDate = request.PublishDate;
 
-        await _context.SaveChangesAsync();
-        return MapToDto(book);
+                await SyncAuthorsAsync(book, request.AuthorNames);
+
+                await _context.SaveChangesAsync();
+                return MapToDto(book);
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                _context.ChangeTracker.Clear();
+                if (attempt == maxAttempts - 1)
+                    throw new InvalidOperationException("Could not generate a unique slug after multiple attempts.", ex);
+            }
+        }
+
+        throw new InvalidOperationException("Could not update book.");
     }
 
     public async Task<bool> DeleteAsync(string slug)
@@ -227,6 +261,12 @@ public class BookService : IBookService
         }
 
         return slug;
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static BookDto MapToDto(Book book) => new()
