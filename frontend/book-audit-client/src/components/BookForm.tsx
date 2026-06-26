@@ -15,6 +15,8 @@ export function BookForm({ id, defaultValues, onSubmit }: BookFormProps) {
     defaultValues
   })
 
+  const today = new Date().toISOString().split('T')[0]
+
   return (
     <Box
       component="form"
@@ -29,18 +31,29 @@ export function BookForm({ id, defaultValues, onSubmit }: BookFormProps) {
         helperText={errors.title?.message}
       />
       <TextField
-        label="Author"
-        {...register('author')}
-        error={!!errors.author}
-        helperText={errors.author?.message}
-      />
-      <TextField
-        label="Description"
-        {...register('description')}
+        label="Short Description"
+        {...register('shortDescription')}
         multiline
         rows={4}
-        error={!!errors.description}
-        helperText={errors.description?.message}
+        error={!!errors.shortDescription}
+        helperText={errors.shortDescription?.message}
+      />
+      <TextField
+        label="Publish Date"
+        type="date"
+        {...register('publishDate')}
+        error={!!errors.publishDate}
+        helperText={errors.publishDate?.message}
+        slotProps={{
+          input: { inputProps: { max: today } },
+          inputLabel: { shrink: true }
+        }}
+      />
+      <TextField
+        label="Authors"
+        {...register('authorNames')}
+        error={!!errors.authorNames}
+        helperText={errors.authorNames?.message || 'Separate authors with commas'}
       />
     </Box>
   )
