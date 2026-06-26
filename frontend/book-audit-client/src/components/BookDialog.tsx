@@ -1,18 +1,7 @@
-import { useRef } from 'react'
-import Draggable from 'react-draggable'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Paper } from '@mui/material'
-import type { PaperProps } from '@mui/material'
+import { Button, DialogActions, DialogContent } from '@mui/material'
 import { BookForm } from './BookForm'
+import { DraggableDialog, DraggableDialogTitle } from './DraggableDialog'
 import type { BookFormData } from '../schemas/bookSchema'
-
-function DraggablePaper(props: PaperProps) {
-  const nodeRef = useRef<HTMLDivElement>(null)
-  return (
-    <Draggable nodeRef={nodeRef} handle=".MuiDialogTitle-root" cancel=".MuiDialogContent-root">
-      <Paper ref={nodeRef} {...props} />
-    </Draggable>
-  )
-}
 
 interface BookDialogProps {
   open: boolean
@@ -25,8 +14,8 @@ interface BookDialogProps {
 
 export function BookDialog({ open, title, submitLabel, defaultValues, onClose, onSubmit }: BookDialogProps) {
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperComponent={DraggablePaper}>
-      <DialogTitle>{title}</DialogTitle>
+    <DraggableDialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DraggableDialogTitle onClose={onClose}>{title}</DraggableDialogTitle>
       <DialogContent>
         <BookForm id="book-form" defaultValues={defaultValues} onSubmit={onSubmit} />
       </DialogContent>
@@ -36,6 +25,6 @@ export function BookDialog({ open, title, submitLabel, defaultValues, onClose, o
           {submitLabel}
         </Button>
       </DialogActions>
-    </Dialog>
+    </DraggableDialog>
   )
 }
