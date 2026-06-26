@@ -15,11 +15,11 @@ export const useBooks = (request: BookListRequest) =>
     queryFn: () => getBooks(request)
   })
 
-export const useBook = (id: number) =>
+export const useBook = (slug: string) =>
   useQuery<Book, Error>({
-    queryKey: ['books', id],
-    queryFn: () => getBook(id),
-    enabled: id > 0
+    queryKey: ['books', slug],
+    queryFn: () => getBook(slug),
+    enabled: !!slug
   })
 
 export const useCreateBook = () => {
@@ -35,11 +35,11 @@ export const useCreateBook = () => {
 export const useUpdateBook = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, request }: { id: number; request: UpdateBookRequest }) =>
-      updateBook(id, request),
+    mutationFn: ({ slug, request }: { slug: string; request: UpdateBookRequest }) =>
+      updateBook(slug, request),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['books'] })
-      queryClient.invalidateQueries({ queryKey: ['books', variables.id] })
+      queryClient.invalidateQueries({ queryKey: ['books', variables.slug] })
     }
   })
 }

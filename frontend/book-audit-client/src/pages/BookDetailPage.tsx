@@ -7,13 +7,12 @@ import { HistoryTimeline } from '../components/HistoryTimeline'
 import { HistoryTable } from '../components/HistoryTable'
 
 export function BookDetailPage() {
-  const { id } = useParams()
+  const { slug } = useParams()
   const navigate = useNavigate()
   const { showMessage } = useSnackbar()
-  const bookId = Number(id)
 
-  const { data: book, isLoading: bookLoading, error: bookError } = useBook(bookId)
-  const { data: history, isLoading: historyLoading, error: historyError } = useBookHistory(bookId)
+  const { data: book, isLoading: bookLoading, error: bookError } = useBook(slug ?? '')
+  const { data: history, isLoading: historyLoading, error: historyError } = useBookHistory(book?.id ?? 0)
 
   useEffect(() => {
     if (bookError) showMessage('Failed to load book details', 'error')

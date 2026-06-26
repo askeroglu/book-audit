@@ -12,8 +12,8 @@ export const getBooks = async (request: BookListRequest): Promise<PagedResult<Bo
   return response.data
 }
 
-export const getBook = async (id: number): Promise<Book> => {
-  const response = await apiClient.get<Book>(`/books/${id}`)
+export const getBook = async (slug: string): Promise<Book> => {
+  const response = await apiClient.get<Book>(`/books/${slug}`)
   return response.data
 }
 
@@ -22,13 +22,13 @@ export const createBook = async (request: CreateBookRequest): Promise<Book> => {
   return response.data
 }
 
-export const updateBook = async (id: number, request: UpdateBookRequest): Promise<Book> => {
-  const response = await apiClient.put<Book>(`/books/${id}`, request)
+export const updateBook = async (slug: string, request: UpdateBookRequest): Promise<Book> => {
+  const response = await apiClient.put<Book>(`/books/${slug}`, request)
   return response.data
 }
 
-export const deleteBook = async (id: number): Promise<void> => {
-  await apiClient.delete(`/books/${id}`)
+export const deleteBook = async (slug: string): Promise<void> => {
+  await apiClient.delete(`/books/${slug}`)
 }
 
 export const getBookHistory = async (bookId: number): Promise<BookHistory[]> => {

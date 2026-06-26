@@ -22,10 +22,10 @@ public class BooksController : ControllerBase
         return Ok(books);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<BookDto>> GetById(int id)
+    [HttpGet("{slug}")]
+    public async Task<ActionResult<BookDto>> GetBySlug(string slug)
     {
-        var book = await _service.GetByIdAsync(id);
+        var book = await _service.GetBySlugAsync(slug);
         return book == null ? NotFound() : Ok(book);
     }
 
@@ -33,20 +33,20 @@ public class BooksController : ControllerBase
     public async Task<ActionResult<BookDto>> Create(CreateBookRequest request)
     {
         var book = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = book.Id }, book);
+        return CreatedAtAction(nameof(GetBySlug), new { slug = book.Slug }, book);
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<BookDto>> Update(int id, UpdateBookRequest request)
+    [HttpPut("{slug}")]
+    public async Task<ActionResult<BookDto>> Update(string slug, UpdateBookRequest request)
     {
-        var book = await _service.UpdateAsync(id, request);
+        var book = await _service.UpdateAsync(slug, request);
         return book == null ? NotFound() : Ok(book);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpDelete("{slug}")]
+    public async Task<IActionResult> Delete(string slug)
     {
-        var deleted = await _service.DeleteAsync(id);
+        var deleted = await _service.DeleteAsync(slug);
         return deleted ? NoContent() : NotFound();
     }
 }

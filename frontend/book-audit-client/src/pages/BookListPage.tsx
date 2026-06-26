@@ -54,7 +54,7 @@ export function BookListPage() {
 
   const handleDelete = (book: Book) => {
     if (confirm('Are you sure you want to delete this book?')) {
-      deleteBook.mutate(book.id, {
+      deleteBook.mutate(book.slug, {
         onSuccess: () => showMessage('Book deleted', 'success'),
         onError: () => showMessage('Failed to delete book', 'error')
       })
@@ -63,7 +63,7 @@ export function BookListPage() {
 
   const handleSubmit = (formData: BookFormData) => {
     if (editingBook) {
-      updateBook.mutate({ id: editingBook.id, request: formData }, {
+      updateBook.mutate({ slug: editingBook.slug, request: formData }, {
         onSuccess: () => {
           showMessage('Book updated', 'success')
           setDialogOpen(false)
@@ -122,7 +122,7 @@ export function BookListPage() {
         sortingMode="server"
         sortModel={sortModel}
         onSortModelChange={setSortModel}
-        onRowClick={(params) => navigate(`/books/${params.id}`)}
+        onRowClick={(params) => navigate(`/books/${params.row.slug}`)}
       />
       <BookDialog
         open={dialogOpen}

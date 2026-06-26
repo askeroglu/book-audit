@@ -53,9 +53,9 @@ public class BookService : IBookService
         };
     }
 
-    public async Task<BookDto?> GetByIdAsync(int id)
+    public async Task<BookDto?> GetBySlugAsync(string slug)
     {
-        var book = await _context.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+        var book = await _context.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Slug == slug);
         return book == null ? null : MapToDto(book);
     }
 
@@ -73,9 +73,9 @@ public class BookService : IBookService
         return MapToDto(book);
     }
 
-    public async Task<BookDto?> UpdateAsync(int id, UpdateBookRequest request)
+    public async Task<BookDto?> UpdateAsync(string slug, UpdateBookRequest request)
     {
-        var book = await _context.Books.FindAsync(id);
+        var book = await _context.Books.FirstOrDefaultAsync(b => b.Slug == slug);
         if (book == null) return null;
 
         book.Title = request.Title;
@@ -87,9 +87,9 @@ public class BookService : IBookService
         return MapToDto(book);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(string slug)
     {
-        var book = await _context.Books.FindAsync(id);
+        var book = await _context.Books.FirstOrDefaultAsync(b => b.Slug == slug);
         if (book == null) return false;
 
         book.IsDeleted = true;
@@ -103,7 +103,7 @@ public class BookService : IBookService
         var slug = baseSlug;
         var counter = 2;
 
-        while (await _context.Books.AnyAsync(b => b.Slug == slug && b.Id != excludeId))
+        while (await _context.Books.IgnoreQueryFilters().AnyAsync(b => b.Slug == slug && b.Id != excludeId))
         {
             slug = $"{baseSlug}-{counter}";
             counter++;

@@ -9,7 +9,7 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { index: true, element: <BookListPage /> },
-      { path: 'books/:id', element: <BookDetailPage /> }
+      { path: 'books/:slug', element: <BookDetailPage /> }
     ]
   }
 ])
