@@ -1,12 +1,25 @@
-import { AppBar, Box, Container, Toolbar, Typography } from '@mui/material'
-import { Outlet } from 'react-router-dom'
+import { AppBar, Box, Container, IconButton, Stack, Toolbar, Typography } from '@mui/material'
+import { Outlet, useNavigate } from 'react-router-dom'
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks'
 
 export function Layout() {
+  const navigate = useNavigate()
+
   return (
     <Box>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6">Book Audit</Typography>
+          <Stack
+            direction="row"
+            alignItems="center"
+            onClick={() => navigate('/')}
+            sx={{ cursor: 'pointer' }}
+          >
+            <IconButton color="inherit" edge="start" sx={{ mr: 1 }}>
+              <LibraryBooksIcon />
+            </IconButton>
+            <Typography variant="h6">Book Audit</Typography>
+          </Stack>
         </Toolbar>
       </AppBar>
       <Container sx={{ mt: 4 }}>
