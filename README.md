@@ -20,7 +20,6 @@ A simple full-stack app for tracking a personal book collection. Every change is
 - Entity Framework Core
 - SQLite
 - Swashbuckle (Swagger)
-- xUnit for testing
 
 **Frontend**
 
