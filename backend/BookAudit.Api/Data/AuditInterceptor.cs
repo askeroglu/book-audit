@@ -1,75 +1,144 @@
+using System.Text.Json;
 using BookAudit.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using System.Text.Json;
 
 namespace BookAudit.Api.Data;
 
 public class AuditInterceptor : SaveChangesInterceptor
 {
+    public override InterceptionResult<int> SavingChanges(
+        DbContextEventData eventData,
+        InterceptionResult<int> result)
+    {
+        BuildAuditEntries(eventData.Context);
+        return base.SavingChanges(eventData, result);
+    }
+
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
-        var context = eventData.Context;
-        if (context == null) return await base.SavingChangesAsync(eventData, result, cancellationToken);
-
-        var histories = new List<BookHistory>();
-
-        var entries = context.ChangeTracker.Entries<Book>().ToList();
-
-        foreach (var entry in entries)
-        {
-            var history = new BookHistory
-            {
-                BookId = entry.Entity.Id,
-                BookSlug = entry.Entity.Slug,
-                Timestamp = DateTime.UtcNow
-            };
-
-            if (entry.State == EntityState.Added)
-            {
-                history.Action = "Created";
-                history.Changes = Serialize(entry.Entity);
-            }
-            else if (entry.State == EntityState.Modified)
-            {
-                var wasDeleted = entry.OriginalValues.GetValue<bool>("IsDeleted");
-                var isDeleted = entry.Entity.IsDeleted;
-
-                history.Action = !wasDeleted && isDeleted ? "Deleted" : "Updated";
-                history.Changes = JsonSerializer.Serialize(entry.OriginalValues.ToObject());
-            }
-            else if (entry.State == EntityState.Deleted)
-            {
-                history.Action = "Deleted";
-                history.Changes = Serialize(entry.Entity);
-            }
-            else
-            {
-                continue;
-            }
-
-            histories.Add(history);
-        }
-
-        if (histories.Count > 0)
-        {
-            context.Set<BookHistory>().AddRange(histories);
-        }
-
+        BuildAuditEntries(eventData.Context);
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
-    private static string? Serialize(Book book)
+    private static void BuildAuditEntries(DbContext? context)
     {
-        return JsonSerializer.Serialize(new
+        if (context is null) return;
+
+        var history = new List<BookHistory>();
+        var now = DateTime.UtcNow;
+
+        var bookEntries = context.ChangeTracker.Entries<Book>().ToList();
+
+        foreach (var entry in bookEntries)
         {
-            book.Title,
-            book.Author,
-            book.Description,
-            book.Slug
-        });
+            var bookId = entry.Entity.Id;
+
+            if (entry.State == EntityState.Added)
+            {
+                history.Add(new BookHistory
+                {
+                    BookId = bookId,
+                    ChangedAt = now,
+                    Action = "Created",
+                    PropertyName = "Book",
+                    OldValue = null,
+                    NewValue = entry.Entity.Title,
+                    Description = $"Book '{entry.Entity.Title}' was created"
+                });
+
+                foreach (var property in entry.Properties)
+                {
+                    var propertyName = property.Metadata.Name;
+                    if (propertyName is nameof(Book.Title) or nameof(Book.Slug) or nameof(Book.IsDeleted) or nameof(Book.Id) or nameof(Book.CreatedAt))
+                        continue;
+
+                    var currentValue = property.CurrentValue;
+                    if (currentValue is null) continue;
+
+                    var displayValue = FormatValue(currentValue);
+                    history.Add(new BookHistory
+                    {
+                        BookId = bookId,
+                        ChangedAt = now,
+                        Action = "Created",
+                        PropertyName = propertyName,
+                        OldValue = null,
+                        NewValue = displayValue,
+                        Description = $"{propertyName} was set to '{displayValue}'"
+                    });
+                }
+            }
+            else if (entry.State == EntityState.Deleted)
+            {
+                history.Add(new BookHistory
+                {
+                    BookId = bookId,
+                    ChangedAt = now,
+                    Action = "Deleted",
+                    PropertyName = "Book",
+                    OldValue = entry.Entity.Title,
+                    NewValue = null,
+                    Description = $"Book '{entry.Entity.Title}' was deleted"
+                });
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                var isDeletedChanged = entry.Property(b => b.IsDeleted).IsModified;
+                var isDeleted = entry.Entity.IsDeleted;
+
+                if (isDeletedChanged && isDeleted)
+                {
+                    history.Add(new BookHistory
+                    {
+                        BookId = bookId,
+                        ChangedAt = now,
+                        Action = "Deleted",
+                        PropertyName = "Book",
+                        OldValue = entry.Entity.Title,
+                        NewValue = null,
+                        Description = $"Book '{entry.Entity.Title}' was deleted"
+                    });
+                }
+                else
+                {
+                    foreach (var property in entry.Properties)
+                    {
+                        if (!property.IsModified || property.Metadata.Name == nameof(Book.IsDeleted) || property.Metadata.Name == nameof(Book.Slug))
+                            continue;
+
+                        var oldValue = FormatValue(property.OriginalValue);
+                        var newValue = FormatValue(property.CurrentValue);
+                        var displayName = property.Metadata.Name;
+
+                        history.Add(new BookHistory
+                        {
+                            BookId = bookId,
+                            ChangedAt = now,
+                            Action = "Updated",
+                            PropertyName = displayName,
+                            OldValue = oldValue,
+                            NewValue = newValue,
+                            Description = $"{displayName} was changed from '{oldValue}' to '{newValue}'"
+                        });
+                    }
+                }
+            }
+        }
+
+        if (history.Count > 0)
+        {
+            context.Set<BookHistory>().AddRange(history);
+        }
+    }
+
+    private static string? FormatValue(object? value)
+    {
+        if (value is null) return null;
+        if (value is string s) return s;
+        return JsonSerializer.Serialize(value);
     }
 }

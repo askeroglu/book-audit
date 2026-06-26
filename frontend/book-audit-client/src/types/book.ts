@@ -35,11 +35,22 @@ export interface PagedResult<T> {
   totalPages: number
 }
 
-export interface BookHistory {
+export interface BookHistoryEntry {
   id: number
   bookId: number
-  bookSlug?: string
+  changedAt: string
   action: string
-  changes?: string
-  timestamp: string
+  propertyName: string
+  oldValue: string | null
+  newValue: string | null
+  description: string
+}
+
+export interface HistoryQueryParams {
+  action?: string
+  propertyName?: string
+  sortBy?: string
+  sortDescending?: boolean
+  pageNumber?: number
+  pageSize?: number
 }

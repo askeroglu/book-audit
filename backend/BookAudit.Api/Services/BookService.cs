@@ -121,4 +121,63 @@ public class BookService : IBookService
         Slug = book.Slug,
         CreatedAt = book.CreatedAt
     };
+
+    public async Task<PagedResult<BookHistoryDto>> GetBookHistoryAsync(string slug, HistoryQueryParameters query)
+    {
+        var book = await _context.Books.AsNoTracking().FirstOrDefaultAsync(b => b.Slug == slug);
+        if (book is null) return new PagedResult<BookHistoryDto> { Items = [], TotalCount = 0, PageNumber = query.PageNumber, PageSize = query.PageSize };
+
+        var q = _context.BookHistories
+            .AsNoTracking()
+            .Where(h => h.BookId == book.Id)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.Action))
+        {
+            var pattern = $"%{query.Action.Trim()}%";
+            q = q.Where(h => EF.Functions.Like(h.Action, pattern));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.PropertyName))
+        {
+            var pattern = $"%{query.PropertyName.Trim()}%";
+            q = q.Where(h => EF.Functions.Like(h.PropertyName, pattern));
+        }
+
+        q = query.SortBy?.ToLowerInvariant() switch
+        {
+            "action" => query.SortDescending ? q.OrderByDescending(h => h.Action) : q.OrderBy(h => h.Action),
+            "propertyname" or "property" => query.SortDescending ? q.OrderByDescending(h => h.PropertyName) : q.OrderBy(h => h.PropertyName),
+            "changedat" or "changed-at" => query.SortDescending ? q.OrderByDescending(h => h.ChangedAt) : q.OrderBy(h => h.ChangedAt),
+            _ => q.OrderByDescending(h => h.ChangedAt)
+        };
+
+        var total = await q.CountAsync();
+        var page = Math.Max(query.PageNumber, 1);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+
+        var items = await q
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(h => new BookHistoryDto
+            {
+                Id = h.Id,
+                BookId = h.BookId,
+                ChangedAt = h.ChangedAt,
+                Action = h.Action,
+                PropertyName = h.PropertyName,
+                OldValue = h.OldValue,
+                NewValue = h.NewValue,
+                Description = h.Description
+            })
+            .ToListAsync();
+
+        return new PagedResult<BookHistoryDto>
+        {
+            Items = items,
+            TotalCount = total,
+            PageNumber = page,
+            PageSize = pageSize
+        };
+    }
 }

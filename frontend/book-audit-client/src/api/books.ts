@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { Book, BookListRequest, PagedResult, CreateBookRequest, UpdateBookRequest, BookHistory } from '../types/book'
+import type { Book, BookListRequest, PagedResult, CreateBookRequest, UpdateBookRequest } from '../types/book'
 
 export const getBooks = async (request: BookListRequest): Promise<PagedResult<Book>> => {
   const params = new URLSearchParams()
@@ -29,9 +29,4 @@ export const updateBook = async (slug: string, request: UpdateBookRequest): Prom
 
 export const deleteBook = async (slug: string): Promise<void> => {
   await apiClient.delete(`/books/${slug}`)
-}
-
-export const getBookHistory = async (bookId: number): Promise<BookHistory[]> => {
-  const response = await apiClient.get<BookHistory[]>(`/books/${bookId}/history`)
-  return response.data
 }

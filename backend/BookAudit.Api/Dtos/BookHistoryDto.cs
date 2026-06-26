@@ -1,6 +1,6 @@
-namespace BookAudit.Api.Models;
+namespace BookAudit.Api.Dtos;
 
-public class BookHistory
+public class BookHistoryDto
 {
     public int Id { get; set; }
     public int BookId { get; set; }

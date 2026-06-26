@@ -9,4 +9,5 @@ public interface IBookService
     Task<BookDto> CreateAsync(CreateBookRequest request);
     Task<BookDto?> UpdateAsync(string slug, UpdateBookRequest request);
     Task<bool> DeleteAsync(string slug);
+    Task<PagedResult<BookHistoryDto>> GetBookHistoryAsync(string slug, HistoryQueryParameters query);
 }

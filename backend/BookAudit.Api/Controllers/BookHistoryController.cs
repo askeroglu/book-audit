@@ -1,29 +1,26 @@
-using BookAudit.Api.Data;
-using BookAudit.Api.Models;
+using BookAudit.Api.Dtos;
+using BookAudit.Api.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BookAudit.Api.Controllers;
 
 [ApiController]
-[Route("api/books/{bookId}/history")]
+[Route("api/books/{bookSlug}/history")]
 public class BookHistoryController : ControllerBase
 {
-    private readonly BookAuditDbContext _context;
+    private readonly IBookService _bookService;
 
-    public BookHistoryController(BookAuditDbContext context)
+    public BookHistoryController(IBookService bookService)
     {
-        _context = context;
+        _bookService = bookService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BookHistory>>> GetHistory(int bookId)
+    public async Task<ActionResult<PagedResult<BookHistoryDto>>> GetHistory(
+        string bookSlug,
+        [FromQuery] HistoryQueryParameters query)
     {
-        var history = await _context.BookHistories
-            .Where(h => h.BookId == bookId)
-            .OrderByDescending(h => h.Timestamp)
-            .ToListAsync();
-
-        return Ok(history);
+        var result = await _bookService.GetBookHistoryAsync(bookSlug, query);
+        return Ok(result);
     }
 }
