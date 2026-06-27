@@ -36,7 +36,7 @@ A simple full-stack app for tracking a personal book collection. Every change is
 ```
 book-audit/
 ├── backend/
-│   ├── BookAudit.Api/          # Web API│ 
+│   └── BookAudit.Api/          # Web API
 └── frontend/
     └── book-audit-client/      # React SPA
 ```
@@ -91,14 +91,20 @@ Every create, update, delete, author addition or author removal is captured by a
 - Renaming a book updates the slug and the URL changes with it.
 - Audit history is stored in the same SQLite database.
 
+## Future improvements / TODO
 
-<img width="2014" height="678" alt="image" src="https://github.com/user-attachments/assets/d67eb224-6f99-43a7-b23f-8b379e84f1d9" />
+- **Generic audit with `IAuditableEntity`**: Currently the interceptor explicitly tracks `Book` and `BookAuthor`. A marker interface like `IAuditableEntity` plus an `[AuditIgnore]` attribute would let any entity opt-in to audit logging without touching the interceptor.
+- **Centralized `AuditLog` table**: Today history is stored in a book-specific `BookHistory` table. A generic `AuditLog` table with `EntityName`, `EntityId`, `Action`, `PropertyName`, `OldValue`, `NewValue` would support publishers, categories and other future entities.
+- **Optimistic updates on all mutations**: Update and delete already use optimistic cache updates; create could also be made optimistic once the server-generated `id`/`slug` handling is worked out.
 
-<img width="814" height="678" alt="image" src="https://github.com/user-attachments/assets/7f2d5e60-a68f-48e5-b7eb-5a7f57edebc2" />
 
-<img width="718" height="678" alt="image" src="https://github.com/user-attachments/assets/92e4c1bb-ea7f-4f1b-8c16-65b7201c9613" />
+<img width="2014" height="400" alt="image" src="https://github.com/user-attachments/assets/d67eb224-6f99-43a7-b23f-8b379e84f1d9" />
 
-<img width="1998" height="678" alt="image" src="https://github.com/user-attachments/assets/1e21d8f6-4abe-4c23-a327-c7480fb390e6" />
+<img width="814" height="400" alt="image" src="https://github.com/user-attachments/assets/7f2d5e60-a68f-48e5-b7eb-5a7f57edebc2" />
+
+<img width="718" height="400" alt="image" src="https://github.com/user-attachments/assets/92e4c1bb-ea7f-4f1b-8c16-65b7201c9613" />
+
+<img width="1998" height="400" alt="image" src="https://github.com/user-attachments/assets/1e21d8f6-4abe-4c23-a327-c7480fb390e6" />
 
 
 
