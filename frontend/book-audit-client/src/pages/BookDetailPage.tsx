@@ -28,6 +28,7 @@ import { useBookHistory, useAllBookHistory } from '../hooks/useBookHistory'
 import { useSnackbar } from '../hooks/useSnackbar'
 import type { BookFormData } from '../schemas/bookSchema'
 import type { BookHistoryEntry } from '../types/book'
+import { isBookUnchanged } from '../utils/bookHelpers'
 
 const historyColumns: GridColDef<BookHistoryEntry>[] = [
   {
@@ -88,6 +89,10 @@ export function BookDetailPage() {
 
   const handleSubmit = (formData: BookFormData) => {
     if (!book) return
+    if (isBookUnchanged(book, formData)) {
+      setDialogOpen(false)
+      return
+    }
     updateBook.mutate({ slug: book.slug, request: formData }, {
       onSuccess: (updatedBook) => {
         showMessage('Book updated', 'success')

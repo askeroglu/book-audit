@@ -18,6 +18,7 @@ import { DraggableDialog, DraggableDialogTitle } from '../components/DraggableDi
 import HistoryTimeline from '../components/HistoryTimeline'
 import type { BookFormData } from '../schemas/bookSchema'
 import type { Book } from '../types/book'
+import { isBookUnchanged } from '../utils/bookHelpers'
 
 const columns: GridColDef<Book>[] = [
   { field: 'title', headerName: 'Title', flex: 1, sortable: true },
@@ -103,6 +104,10 @@ export function BookListPage() {
 
   const handleSubmit = (formData: BookFormData) => {
     if (editingBook) {
+      if (isBookUnchanged(editingBook, formData)) {
+        setDialogOpen(false)
+        return
+      }
       updateBook.mutate({ slug: editingBook.slug, request: formData }, {
         onSuccess: () => {
           showMessage('Book updated', 'success')
