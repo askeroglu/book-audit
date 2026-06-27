@@ -89,8 +89,7 @@ namespace BookAudit.Api.Migrations
                         name: "FK_BookHistories_Books_BookId",
                         column: x => x.BookId,
                         principalTable: "Books",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.InsertData(

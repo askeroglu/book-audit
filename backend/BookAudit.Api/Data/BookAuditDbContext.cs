@@ -47,12 +47,10 @@ public class BookAuditDbContext : DbContext
             entity.HasKey(ba => new { ba.BookId, ba.AuthorId });
             entity.HasOne(ba => ba.Book)
                 .WithMany(b => b.BookAuthors)
-                .HasForeignKey(ba => ba.BookId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(ba => ba.BookId);
             entity.HasOne(ba => ba.Author)
                 .WithMany(a => a.BookAuthors)
-                .HasForeignKey(ba => ba.AuthorId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(ba => ba.AuthorId);
             entity.HasQueryFilter(ba => !ba.Book.IsDeleted);
             entity.HasData(
                 new BookAuthor { BookId = 1, AuthorId = 1 },
@@ -70,8 +68,7 @@ public class BookAuditDbContext : DbContext
             entity.HasOne(h => h.Book)
                 .WithMany(b => b.History)
                 .HasForeignKey(h => h.BookId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasQueryFilter(h => !h.Book.IsDeleted);
+                .IsRequired(false);
         });
     }
 }

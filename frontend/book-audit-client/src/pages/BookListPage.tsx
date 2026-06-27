@@ -1,5 +1,6 @@
 import { Box, Button, DialogActions, DialogContent, IconButton, InputAdornment, Paper, Stack, TextField, Typography } from '@mui/material'
-import type { GridPaginationModel, GridSortModel, GridRenderCellParams } from '@mui/x-data-grid'
+import { GridActionsCellItem } from '@mui/x-data-grid'
+import type { GridPaginationModel, GridSortModel, GridRowParams, GridColDef } from '@mui/x-data-grid'
 import AddIcon from '@mui/icons-material/Add'
 import ClearIcon from '@mui/icons-material/Clear'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -18,7 +19,7 @@ import HistoryTimeline from '../components/HistoryTimeline'
 import type { BookFormData } from '../schemas/bookSchema'
 import type { Book } from '../types/book'
 
-const columns = [
+const columns: GridColDef<Book>[] = [
   { field: 'title', headerName: 'Title', flex: 1, sortable: true },
   { field: 'authors', headerName: 'Authors', flex: 1, sortable: true, valueGetter: (value: string[]) => value.join(', ') },
   { field: 'publishDate', headerName: 'Published', width: 120, sortable: true },
@@ -93,7 +94,7 @@ export function BookListPage() {
 
   const handleDelete = (book: Book) => {
     if (confirm('Are you sure you want to delete this book?')) {
-      deleteBook.mutate(book.slug, {
+      deleteBook.mutate(book.id, {
         onSuccess: () => showMessage('Book deleted', 'success'),
         onError: () => showMessage('Failed to delete book', 'error')
       })
@@ -120,24 +121,37 @@ export function BookListPage() {
     }
   }
 
-  const actionColumn = {
+  const actionColumn: GridColDef<Book> = {
     field: 'actions',
     headerName: 'Actions',
     width: 130,
     sortable: false,
-    renderCell: (params: GridRenderCellParams<Book>) => (
-      <Stack direction="row" spacing={0.5}>
-        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleHistory(params.row); }} title="History">
-          <HistoryIcon />
-        </IconButton>
-        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }} title="Edit">
-          <EditIcon />
-        </IconButton>
-        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDelete(params.row); }} title="Delete">
-          <DeleteIcon />
-        </IconButton>
-      </Stack>
-    )
+    type: 'actions',
+    getActions: (params: GridRowParams<Book>) => {
+      const currentRow = data?.items.find((b) => b.id === params.id)
+      if (!currentRow) return []
+
+      return [
+        <GridActionsCellItem
+          key="history"
+          icon={<HistoryIcon />}
+          label="History"
+          onClick={(e) => { e.stopPropagation(); handleHistory(currentRow) }}
+        />,
+        <GridActionsCellItem
+          key="edit"
+          icon={<EditIcon />}
+          label="Edit"
+          onClick={(e) => { e.stopPropagation(); handleEdit(currentRow) }}
+        />,
+        <GridActionsCellItem
+          key="delete"
+          icon={<DeleteIcon />}
+          label="Delete"
+          onClick={(e) => { e.stopPropagation(); handleDelete(currentRow) }}
+        />
+      ]
+    }
   }
 
   return (

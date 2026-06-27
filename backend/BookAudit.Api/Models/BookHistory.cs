@@ -4,7 +4,7 @@ public class BookHistory
 {
     public int Id { get; set; }
     public int BookId { get; set; }
-    public Book Book { get; set; } = null!;
+    public Book? Book { get; set; }
     public DateTime ChangedAt { get; set; }
     public string Action { get; set; } = string.Empty;
     public string PropertyName { get; set; } = string.Empty;

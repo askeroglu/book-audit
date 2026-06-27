@@ -10,12 +10,19 @@ interface BookFormProps {
 }
 
 export function BookForm({ id, defaultValues, onSubmit }: BookFormProps) {
+  const today = new Date().toISOString().split('T')[0]
+
+  const resolvedDefaults: BookFormData = defaultValues ?? {
+    title: '',
+    shortDescription: '',
+    publishDate: today,
+    authorNames: ''
+  }
+
   const { register, handleSubmit, formState: { errors } } = useForm<BookFormData>({
     resolver: zodResolver(bookSchema),
-    defaultValues
+    defaultValues: resolvedDefaults
   })
-
-  const today = new Date().toISOString().split('T')[0]
 
   return (
     <Box

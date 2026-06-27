@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookAudit.Api.Migrations
 {
     [DbContext(typeof(BookAuditDbContext))]
-    [Migration("20260626160620_InitialCreate")]
+    [Migration("20260627150016_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -217,9 +217,7 @@ namespace BookAudit.Api.Migrations
                 {
                     b.HasOne("BookAudit.Api.Models.Book", "Book")
                         .WithMany("History")
-                        .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("BookId");
 
                     b.Navigation("Book");
                 });

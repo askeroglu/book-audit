@@ -142,14 +142,31 @@ public class BookService : IBookService
         throw new InvalidOperationException("Could not update book.");
     }
 
-    public async Task<bool> DeleteAsync(string slug)
+    public async Task<bool> DeleteAsync(string slugOrId)
     {
-        var book = await _context.Books.FirstOrDefaultAsync(b => b.Slug == slug);
-        if (book == null) return false;
+        try
+        {
+            Book? book;
+            if (int.TryParse(slugOrId, out var id))
+            {
+                book = await _context.Books.FirstOrDefaultAsync(b => b.Id == id);
+            }
+            else
+            {
+                book = await _context.Books.FirstOrDefaultAsync(b => b.Slug == slugOrId);
+            }
 
-        book.IsDeleted = true;
-        await _context.SaveChangesAsync();
-        return true;
+            if (book == null) return false;
+
+            book.IsDeleted = true;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DeleteAsync error for '{slugOrId}': {ex}");
+            throw;
+        }
     }
 
     public async Task<PagedResult<BookHistoryDto>> GetBookHistoryAsync(string slug, HistoryQueryParameters query)

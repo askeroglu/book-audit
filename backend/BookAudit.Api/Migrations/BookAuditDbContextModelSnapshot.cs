@@ -214,9 +214,7 @@ namespace BookAudit.Api.Migrations
                 {
                     b.HasOne("BookAudit.Api.Models.Book", "Book")
                         .WithMany("History")
-                        .HasForeignKey("BookId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("BookId");
 
                     b.Navigation("Book");
                 });

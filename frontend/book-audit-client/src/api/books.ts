@@ -27,8 +27,8 @@ export const updateBook = async (slug: string, data: BookFormData): Promise<Book
   return response.data
 }
 
-export const deleteBook = async (slug: string): Promise<void> => {
-  await apiClient.delete(`/books/${slug}`)
+export const deleteBook = async (id: number): Promise<void> => {
+  await apiClient.delete(`/books/${id}`)
 }
 
 function toRequest(data: BookFormData): CreateBookRequest | UpdateBookRequest {

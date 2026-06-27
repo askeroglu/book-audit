@@ -43,10 +43,10 @@ public class BooksController : ControllerBase
         return book == null ? NotFound() : Ok(book);
     }
 
-    [HttpDelete("{slug}")]
-    public async Task<IActionResult> Delete(string slug)
+    [HttpDelete("{slugOrId}")]
+    public async Task<IActionResult> Delete(string slugOrId)
     {
-        var deleted = await _service.DeleteAsync(slug);
+        var deleted = await _service.DeleteAsync(slugOrId);
         return deleted ? NoContent() : NotFound();
     }
 }

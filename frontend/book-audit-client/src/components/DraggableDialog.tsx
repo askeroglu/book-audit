@@ -90,7 +90,13 @@ export function DraggableDialog({ children, ...props }: DialogProps) {
 
   return (
     <DragContext.Provider value={{ handleId, paperRef, startDrag }}>
-      <Dialog {...props} PaperComponent={DraggablePaper} transitionDuration={0}>
+      <Dialog
+        {...props}
+        PaperComponent={DraggablePaper}
+        transitionDuration={0}
+        keepMounted={false}
+        disableRestoreFocus
+      >
         {children}
       </Dialog>
     </DragContext.Provider>
